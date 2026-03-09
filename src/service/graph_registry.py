@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Tuple
 
-from src.dto.models import GraphSubmission, GraphListResponse
-from src.service.graph_validator import (
+from dto.models import GraphSubmission, GraphListResponse, IntentListResponse
+from service.graph_validator import (
     validate_intent_format,
     validate_graph_schema,
 )
@@ -16,8 +16,7 @@ class GraphRegistry:
     
     async def add_graph(
         self, 
-        submission: GraphSubmission,
-        base_url: str = "http://localhost:8000"
+        submission: GraphSubmission
     ) -> Tuple[bool, str]:
         """
         Add a new graph to the registry.
@@ -72,6 +71,19 @@ class GraphRegistry:
             total_count=len(graphs_list)
         )
     
+    def list_intents(self) -> IntentListResponse:
+        """
+        List all registered intents.
+        
+        Returns:
+            IntentListResponse containing all intent names
+        """
+        intents_list = list(self.graphs.keys())
+        return IntentListResponse(
+            intents=intents_list,
+            total_count=len(intents_list)
+        )
+    
     def delete_graph(self, intent: str) -> Tuple[bool, str]:
         """
         Delete a graph from the registry.
@@ -87,6 +99,34 @@ class GraphRegistry:
         
         del self.graphs[intent]
         return True, f"Graph with intent '{intent}' deleted successfully"
+    
+    async def update_graph(
+        self,
+        intent: str,
+        submission: GraphSubmission
+    ) -> Tuple[bool, str]:
+        """
+        Update an existing graph in the registry.
+        
+        Args:
+            intent: The intent identifier
+            submission: The new graph submission
+            
+        Returns:
+            Tuple of (success, message)
+        """
+        # Check if intent exists
+        if intent not in self.graphs:
+            return False, f"Graph with intent '{intent}' not found"
+        
+        # Validate graph schema
+        is_valid, error = await validate_graph_schema(submission)
+        if not is_valid:
+            return False, error
+        
+        # Store the updated graph
+        self.graphs[intent] = submission
+        return True, f"Graph '{intent}' updated successfully"
 
 
 # Singleton instance

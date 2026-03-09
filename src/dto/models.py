@@ -78,3 +78,10 @@ class GraphListResponse(BaseModel):
 
     graphs: List[GraphSubmission]
     total_count: int
+
+
+class IntentListResponse(BaseModel):
+    """Response for listing all intents."""
+
+    intents: List[str]
+    total_count: int

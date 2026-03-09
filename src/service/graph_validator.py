@@ -1,15 +1,13 @@
 import re
 from typing import List, Tuple, Set, Dict
 
-from src.dto.models import GraphSubmission, GraphEdge, GraphNodeModel
+from dto.models import GraphSubmission, GraphEdge, GraphNodeModel
 
 # Validation constants
 MAX_NODES = 50
 MAX_EDGES = 200
 INTENT_PATTERN = re.compile(r"^[a-z]+(_[a-z]+){0,3}$")
 NODE_ID_PATTERN = re.compile(r"^[a-z0-9_]+$")
-END_NODE = "END"
-
 
 class ValidationError(Exception):
     """Custom exception for validation errors."""
@@ -119,9 +117,10 @@ def validate_edge_structure(
     Returns:
         Tuple of (is_valid, error_message)
     """
-    node_ids = {node.id for node in nodes}
-    node_ids.add(END_NODE)  # END is a valid target
-    
+    node_ids = set()
+    for node in nodes:
+        node_ids.add(node.id)
+
     for edge in edges:
         if edge.from_ not in node_ids:
             return False, f"Edge source node '{edge.from_}' does not exist"
@@ -129,22 +128,6 @@ def validate_edge_structure(
             return False, f"Edge target node '{edge.to}' does not exist"
     
     return True, ""
-
-
-def validate_end_node(edges: List[GraphEdge]) -> Tuple[bool, str]:
-    """
-    Validate that at least one edge points to END node.
-    
-    Returns:
-        Tuple of (is_valid, error_message)
-    """
-    has_end_edge = any(edge.to == END_NODE for edge in edges)
-    
-    if not has_end_edge:
-        return False, "Graph must have at least one edge pointing to 'END' node"
-    
-    return True, ""
-
 
 def validate_dag_integrity(
     nodes: List[GraphNodeModel], 
@@ -160,7 +143,6 @@ def validate_dag_integrity(
     """
     # Build adjacency list
     adjacency: Dict[str, List[str]] = {node.id: [] for node in nodes}
-    adjacency[END_NODE] = []  # END node has no outgoing edges
     
     for edge in edges:
         adjacency[edge.from_].append(edge.to)
@@ -268,11 +250,6 @@ async def validate_graph_schema(submission: GraphSubmission) -> Tuple[bool, str]
     
     # Validate edge structure
     is_valid, error = validate_edge_structure(nodes, edges)
-    if not is_valid:
-        return is_valid, error
-    
-    # Validate END node
-    is_valid, error = validate_end_node(edges)
     if not is_valid:
         return is_valid, error
     

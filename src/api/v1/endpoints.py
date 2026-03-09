@@ -1,12 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 
-from src.dto.models import (
+from dto.models import (
     ErrorResponse,
     GraphSubmission,
     GraphResponse,
     GraphListResponse,
+    IntentListResponse,
 )
-from src.service.graph_registry import get_graph_registry
+from service.graph_registry import get_graph_registry
 
 router = APIRouter()
 
@@ -38,7 +39,7 @@ async def add_graph(request: GraphSubmission):
     # We'll use a default since we don't have direct access to scheme/host
     base_url = "http://localhost:8000"
     
-    success, message = await registry.add_graph(request, base_url)
+    success, message = await registry.add_graph(request)
     
     if not success:
         if "already exists" in message:
@@ -66,6 +67,17 @@ async def list_graphs():
     """List all registered graphs."""
     registry = get_graph_registry()
     return registry.list_graphs()
+
+
+@router.get(
+    "/intents",
+    response_model=IntentListResponse,
+    tags=["intents"],
+)
+async def list_intents():
+    """List all registered intents."""
+    registry = get_graph_registry()
+    return registry.list_intents()
 
 
 @router.get(
@@ -107,6 +119,48 @@ async def delete_graph(intent: str):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"error": "GRAPH_NOT_FOUND", "message": message},
+        )
+    
+    return GraphResponse(
+        intent=intent,
+        message=message,
+    )
+
+
+@router.put(
+    "/graphs/{intent}",
+    response_model=GraphResponse,
+    tags=["graphs"],
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid graph or intent"},
+        404: {"model": ErrorResponse, "description": "Graph not found"},
+    },
+)
+async def update_graph(intent: str, request: GraphSubmission):
+    """Update an existing graph in the registry.
+    
+    The intent in the path must match the intent in the request body.
+    """
+    registry = get_graph_registry()
+    
+    # Verify intent matches
+    if request.intent != intent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "INTENT_MISMATCH", "message": f"Intent in path '{intent}' does not match intent in body '{request.intent}'"},
+        )
+    
+    success, message = await registry.update_graph(intent, request)
+    
+    if not success:
+        if "not found" in message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "GRAPH_NOT_FOUND", "message": message},
+            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "VALIDATION_ERROR", "message": message},
         )
     
     return GraphResponse(

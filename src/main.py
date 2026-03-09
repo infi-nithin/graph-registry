@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.v1 import endpoints
+from api.v1 import endpoints
 
 
 def create_application() -> FastAPI:
@@ -36,10 +36,8 @@ def create_application() -> FastAPI:
 
     return app
 
-
-# Module-level app export for uvicorn (e.g., uvicorn main:app --reload)
 app = create_application()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
