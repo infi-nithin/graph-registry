@@ -51,7 +51,6 @@ async def run_alembic_migrations() -> None:
     Runs in a thread pool to avoid event loop issues when called
     from within an async FastAPI context.
     """
-    import concurrent.futures
     from alembic.config import Config
     from alembic import command
 

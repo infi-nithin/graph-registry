@@ -1,15 +1,8 @@
-"""Database models for Graph Registry.
-
-This module contains SQLAlchemy models that map to the database tables
-for persisting graph configurations and audit logs.
-"""
-
 from datetime import datetime
 from typing import Optional, Dict, Any
 from uuid import uuid4
 from sqlalchemy import (
     String,
-    Text,
     DateTime,
     Enum as SQLEnum,
     Index,

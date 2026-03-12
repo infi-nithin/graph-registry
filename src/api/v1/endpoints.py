@@ -9,9 +9,6 @@ from dto.models import (
     IntentListResponse,
 )
 from service.graph_registry import GraphRegistry
-from db.database import get_session_context
-from sqlalchemy import select
-from db.models import Intent, Graph as GraphModel
 
 router = APIRouter()
 
