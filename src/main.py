@@ -1,7 +1,19 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.v1 import endpoints
+from db.database import init_db, close_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler for startup and shutdown events."""
+    # Startup: Initialize database and run migrations
+    await init_db(run_migrations=True)
+    yield
+    # Shutdown: Close database connections
+    await close_db()
 
 
 def create_application() -> FastAPI:
@@ -9,6 +21,7 @@ def create_application() -> FastAPI:
         title="Graph Registry",
         description="Graph Registry API for managing graphs mapped to intents",
         version="0.1.0",
+        lifespan=lifespan,
     )
 
     app.add_middleware(

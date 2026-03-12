@@ -1,13 +1,27 @@
+import os
 import re
-from typing import List, Tuple, Set, Dict
+import logging
+from typing import List, Tuple, Set, Dict, Optional
 
-from dto.models import GraphSubmission, GraphEdge, GraphNodeModel
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from dto.models import GraphSubmission, GraphEdge, GraphNodeModel, MCPToolNode
 
 # Validation constants
 MAX_NODES = 50
 MAX_EDGES = 200
 INTENT_PATTERN = re.compile(r"^[a-z]+(_[a-z]+){0,3}$")
 NODE_ID_PATTERN = re.compile(r"^[a-z0-9_]+$")
+
+# Tool registry configuration
+TOOL_REGISTRY_BASE_URL = os.getenv("TOOL_REGISTRY_URL", "http://localhost:8001")
+TOOL_REGISTRY_API_PREFIX = "/api/v1"
+
+logger = logging.getLogger(__name__)
+
 
 class ValidationError(Exception):
     """Custom exception for validation errors."""
@@ -16,6 +30,42 @@ class ValidationError(Exception):
         self.code = code
         self.message = message
         super().__init__(message)
+
+
+def get_tool_registry_url() -> str:
+    """Get the base URL for the tool registry API."""
+    return f"{TOOL_REGISTRY_BASE_URL}{TOOL_REGISTRY_API_PREFIX}"
+
+
+async def check_tool_exists(tool_name: str) -> Tuple[bool, Optional[str]]:
+    """
+    Check if a tool exists in the tool registry.
+    
+    Args:
+        tool_name: The name of the tool to check
+        
+    Returns:
+        Tuple of (exists, error_message)
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"{get_tool_registry_url()}/mcp/tools/{tool_name}"
+            response = await client.get(url)
+            
+            if response.status_code == 200:
+                return True, None
+            elif response.status_code == 404:
+                return False, f"Tool '{tool_name}' not found in tool registry"
+            else:
+                logger.warning(f"Tool registry returned status {response.status_code}: {response.text}")
+                return False, f"Failed to verify tool '{tool_name}': tool registry returned status {response.status_code}"
+    except httpx.ConnectError:
+        return False, f"Cannot connect to tool registry at {TOOL_REGISTRY_BASE_URL}. Is the service running?"
+    except httpx.TimeoutException:
+        return False, f"Timeout while verifying tool '{tool_name}' - tool registry took too long to respond"
+    except Exception as e:
+        logger.error(f"Error checking tool '{tool_name}': {e}")
+        return False, f"Error verifying tool '{tool_name}': {str(e)}"
 
 
 def validate_intent_format(intent: str) -> Tuple[bool, str]:
@@ -129,6 +179,7 @@ def validate_edge_structure(
     
     return True, ""
 
+
 def validate_dag_integrity(
     nodes: List[GraphNodeModel], 
     edges: List[GraphEdge]
@@ -222,6 +273,36 @@ def validate_reachable_nodes(
     return True, ""
 
 
+async def validate_mcp_tools(nodes: List[GraphNodeModel]) -> Tuple[bool, str]:
+    """
+    Validate that all mcp_tool nodes reference valid tools in the tool registry.
+    
+    Args:
+        nodes: List of graph nodes
+        
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    # Collect all MCP tool nodes
+    mcp_tool_nodes = [node for node in nodes if isinstance(node, MCPToolNode)]
+    
+    if not mcp_tool_nodes:
+        return True, ""  # No MCP tools to validate
+    
+    # Check each tool
+    for node in mcp_tool_nodes:
+        tool_name = node.tool_name
+        exists, error = await check_tool_exists(tool_name)
+        
+        if not exists:
+            return False, (
+                f"Node '{node.id}' references tool '{tool_name}' which is not registered "
+                f"in the tool registry. Error: {error}"
+            )
+    
+    return True, ""
+
+
 async def validate_graph_schema(submission: GraphSubmission) -> Tuple[bool, str]:
     """
     Validate the complete graph schema.
@@ -260,6 +341,11 @@ async def validate_graph_schema(submission: GraphSubmission) -> Tuple[bool, str]
     
     # Validate all nodes are reachable
     is_valid, error = validate_reachable_nodes(nodes, edges)
+    if not is_valid:
+        return is_valid, error
+    
+    # Validate MCP tools exist in tool registry
+    is_valid, error = await validate_mcp_tools(nodes)
     if not is_valid:
         return is_valid, error
     
