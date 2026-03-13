@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status
-import logging
 
 from dto.models import (
     ErrorResponse,
@@ -17,7 +16,6 @@ _registry: GraphRegistry = None
 
 
 def get_registry() -> GraphRegistry:
-    """Get the graph registry instance."""
     global _registry
     if _registry is None:
         _registry = GraphRegistry()
@@ -40,17 +38,10 @@ async def ping():
     },
 )
 async def add_graph(request: GraphSubmission):
-    """Add a new graph to the registry.
-
-    The intent must be unique within the registry. Each intent can have
-    only one graph mapped to it.
-    """
-    logger = logging.getLogger(__name__)
     registry = get_registry()
     try:
         success, message = await registry.add_graph(request)
     except Exception as e:
-        logger.exception("Error adding graph: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={"error": "INTERNAL_ERROR", "message": str(e)},
@@ -79,7 +70,6 @@ async def add_graph(request: GraphSubmission):
     tags=["graphs"],
 )
 async def list_graphs():
-    """List all registered graphs."""
     registry = get_registry()
     return await registry.list_graphs()
 
@@ -90,7 +80,6 @@ async def list_graphs():
     tags=["intents"],
 )
 async def list_intents():
-    """List all registered intents."""
     registry = get_registry()
     return await registry.list_intents()
 
@@ -104,7 +93,6 @@ async def list_intents():
     },
 )
 async def get_graph(intent: str):
-    """Get a specific graph by intent."""
     registry = get_registry()
     graph = await registry.get_graph(intent)
 
@@ -129,7 +117,6 @@ async def get_graph(intent: str):
     },
 )
 async def delete_graph(intent: str):
-    """Delete a graph from the registry."""
     registry = get_registry()
     success, message = await registry.delete_graph(intent)
 
@@ -155,10 +142,6 @@ async def delete_graph(intent: str):
     },
 )
 async def update_graph(intent: str, request: GraphSubmission):
-    """Update an existing graph in the registry.
-
-    The intent in the path must match the intent in the request body.
-    """
     registry = get_registry()
 
     # Verify intent matches

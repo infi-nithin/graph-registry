@@ -1,9 +1,3 @@
-"""Database module for Graph Registry.
-
-This module provides database connection and session management,
-along with SQLAlchemy models for persisting graph configurations.
-"""
-
 from db.database import (
     init_db,
     get_engine,

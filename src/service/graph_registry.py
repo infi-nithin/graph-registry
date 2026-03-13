@@ -1,9 +1,14 @@
 from typing import Optional, Tuple
-import logging
 
 from sqlalchemy import select
 
-from dto.models import GraphSubmission, GraphListResponse, IntentListResponse, Graph, GraphEdge
+from dto.models import (
+    GraphSubmission,
+    GraphListResponse,
+    IntentListResponse,
+    Graph,
+    GraphEdge,
+)
 from service.graph_validator import (
     validate_intent_format,
     validate_graph_schema,
@@ -11,33 +16,14 @@ from service.graph_validator import (
 from db.models import Intent, Graph as GraphModel
 from db.database import get_session_context
 
-logger = logging.getLogger(__name__)
-
 
 class GraphRegistry:
-    """Database-backed graph registry storage and management."""
-
-    async def add_graph(
-        self, 
-        submission: GraphSubmission
-    ) -> Tuple[bool, str]:
-        """
-        Add a new graph to the registry.
-        
-        Args:
-            submission: The graph submission containing intent and graph
-            
-        Returns:
-            Tuple of (success, message)
-        """
-        logger.info(f"Starting add_graph for intent: {submission.intent}")
-        
+    async def add_graph(self, submission: GraphSubmission) -> Tuple[bool, str]:
         # Validate intent format
         is_valid, error = validate_intent_format(submission.intent)
         if not is_valid:
-            logger.warning(f"Intent validation failed: {error}")
             return False, error
-        
+
         try:
             async with await get_session_context() as session:
                 # Check if intent already exists
@@ -45,70 +31,55 @@ class GraphRegistry:
                     select(Intent).where(Intent.name == submission.intent)
                 )
                 existing_intent = result.scalar_one_or_none()
-                
+
                 if existing_intent:
-                    logger.debug(f"Found existing intent: {existing_intent.name}, is_active: {existing_intent.is_active}")
                     # Check if there's already a graph for this intent
                     graph_result = await session.execute(
-                        select(GraphModel).where(GraphModel.intent_id == existing_intent.id)
+                        select(GraphModel).where(
+                            GraphModel.intent_id == existing_intent.id
+                        )
                     )
                     existing_graph = graph_result.scalar_one_or_none()
                     if existing_graph:
-                        return False, f"Intent '{submission.intent}' already exists in registry"
-                
+                        return (
+                            False,
+                            f"Intent '{submission.intent}' already exists in registry",
+                        )
+
                 # Validate graph schema
                 is_valid, error = await validate_graph_schema(submission)
                 if not is_valid:
-                    logger.warning(f"Graph schema validation failed: {error}")
                     return False, error
-                
+
                 # Create or get intent
                 if not existing_intent:
                     intent = Intent(name=submission.intent)
-                    logger.debug(f"Creating new intent: {submission.intent}")
                     session.add(intent)
                     await session.flush()
-                    logger.debug(f"Intent flushed, new ID: {intent.id}")
                 else:
                     intent = existing_intent
-                
+
                 # Create graph record
                 graph = GraphModel(
                     intent_id=intent.id,
                     version=submission.graph.version,
-                    graph_json=submission.graph.model_dump(mode='json'),
+                    graph_json=submission.graph.model_dump(mode="json"),
                 )
                 session.add(graph)
                 await session.commit()
-                
-                logger.info(f"Successfully added graph for intent: {submission.intent}")
                 return True, f"Graph '{submission.intent}' registered successfully"
-        except Exception as e:
-            logger.exception(f"Exception in add_graph: {str(e)}")
+        except Exception:
             raise
-    
+
     async def get_graph(self, intent: str) -> Optional[GraphSubmission]:
-        """
-        Get a graph by intent.
-        
-        Args:
-            intent: The intent identifier
-            
-        Returns:
-            GraphSubmission if found, None otherwise
-        """
-        logger.info(f"Starting get_graph for intent: {intent}")
         async with await get_session_context() as session:
             # Get intent
-            result = await session.execute(
-                select(Intent).where(Intent.name == intent)
-            )
+            result = await session.execute(select(Intent).where(Intent.name == intent))
             intent_obj = result.scalar_one_or_none()
-            
+
             if not intent_obj:
-                logger.warning(f"Intent '{intent}' not found in database")
                 return None
-            
+
             # Get the latest graph for this intent
             graph_result = await session.execute(
                 select(GraphModel)
@@ -117,49 +88,36 @@ class GraphRegistry:
                 .limit(1)
             )
             graph_obj = graph_result.scalar_one_or_none()
-            
+
             if not graph_obj:
-                logger.warning(f"No graphs found for intent: {intent}")
                 return None
-            
+
             # Convert JSON to GraphSubmission
             graph_data = graph_obj.graph_json
-            
+
             # Safely get edges with default empty list
-            edges_data = graph_data.get('edges', [])
+            edges_data = graph_data.get("edges", [])
             edges = []
             for e in edges_data:
                 # Handle both 'from_' and 'from' key names for the source node
-                from_value = e.get('from_') or e.get('from')
-                to_value = e.get('to')
+                from_value = e.get("from_") or e.get("from")
+                to_value = e.get("to")
                 if from_value and to_value:
                     edges.append(GraphEdge(from_=from_value, to=to_value))
-            
+
             graph = Graph(
-                version=graph_data.get('version', '1.0'),
-                nodes=graph_data.get('nodes', []),
-                edges=edges
+                version=graph_data.get("version", "1.0"),
+                nodes=graph_data.get("nodes", []),
+                edges=edges,
             )
-            
-            logger.info(f"Successfully retrieved graph for intent: {intent}")
             return GraphSubmission(intent=intent, graph=graph)
 
     async def list_graphs(self) -> GraphListResponse:
-        """
-        List all registered graphs.
-        
-        Returns:
-            GraphListResponse containing all graphs
-        """
-        logger.info("Starting list_graphs - fetching all active intents")
         async with await get_session_context() as session:
             # Get all intents with their latest graphs
-            result = await session.execute(
-                select(Intent).where(Intent.is_active)
-            )
+            result = await session.execute(select(Intent).where(Intent.is_active))
             intents = result.scalars().all()
-            logger.info(f"Found {len(intents)} active intents in database")
-            
+
             graphs_list = []
             for intent in intents:
                 # Get latest graph for each intent
@@ -170,114 +128,71 @@ class GraphRegistry:
                     .limit(1)
                 )
                 graph_obj = graph_result.scalar_one_or_none()
-                
+
                 if graph_obj:
                     graph_data = graph_obj.graph_json
                     # Safely construct edges
-                    edges_data = graph_data.get('edges', [])
+                    edges_data = graph_data.get("edges", [])
                     edges = []
                     for e in edges_data:
                         # Handle both 'from_' and 'from' key names for the source node
-                        from_value = e.get('from_') or e.get('from')
-                        to_value = e.get('to')
+                        from_value = e.get("from_") or e.get("from")
+                        to_value = e.get("to")
                         if from_value and to_value:
                             edges.append(GraphEdge(from_=from_value, to=to_value))
-                    
+
                     graph = Graph(
-                        version=graph_data.get('version', '1.0'),
-                        nodes=graph_data.get('nodes', []),
-                        edges=edges
+                        version=graph_data.get("version", "1.0"),
+                        nodes=graph_data.get("nodes", []),
+                        edges=edges,
                     )
                     graphs_list.append(GraphSubmission(intent=intent.name, graph=graph))
-            
-            logger.info(f"Returning {len(graphs_list)} graphs")
-            return GraphListResponse(
-                graphs=graphs_list,
-                total_count=len(graphs_list)
-            )
+            return GraphListResponse(graphs=graphs_list, total_count=len(graphs_list))
 
     async def list_intents(self) -> IntentListResponse:
-        """
-        List all registered intents.
-        
-        Returns:
-            IntentListResponse containing all intent names
-        """
         async with await get_session_context() as session:
-            result = await session.execute(
-                select(Intent.name).where(Intent.is_active)
-            )
+            result = await session.execute(select(Intent.name).where(Intent.is_active))
             intents_list = result.scalars().all()
-            
+
             return IntentListResponse(
-                intents=intents_list,
-                total_count=len(intents_list)
+                intents=intents_list, total_count=len(intents_list)
             )
 
     async def delete_graph(self, intent: str) -> Tuple[bool, str]:
-        """
-        Delete a graph from the registry.
-        
-        Args:
-            intent: The intent identifier
-            
-        Returns:
-            Tuple of (success, message)
-        """
-        logger.info(f"Starting delete_graph for intent: {intent}")
         async with await get_session_context() as session:
             # Get intent
-            result = await session.execute(
-                select(Intent).where(Intent.name == intent)
-            )
+            result = await session.execute(select(Intent).where(Intent.name == intent))
             intent_obj = result.scalar_one_or_none()
-            
+
             if not intent_obj:
-                logger.warning(f"Intent '{intent}' not found for deletion")
                 return False, f"Graph with intent '{intent}' not found"
-            
+
             # Soft delete - mark as inactive
             intent_obj.is_active = False
-            
+
             try:
                 await session.commit()
-                logger.info(f"Successfully deleted (soft) graph for intent: {intent}")
             except Exception as e:
-                logger.exception(f"Commit failed for delete_graph: {e}")
                 raise
-            
+
             return True, f"Graph with intent '{intent}' deleted successfully"
 
     async def update_graph(
-        self,
-        intent: str,
-        submission: GraphSubmission
+        self, intent: str, submission: GraphSubmission
     ) -> Tuple[bool, str]:
-        """
-        Update an existing graph in the registry.
-        
-        Args:
-            intent: The intent identifier
-            submission: The new graph submission
-            
-        Returns:
-            Tuple of (success, message)
-        """
         async with await get_session_context() as session:
             # Get intent
-            result = await session.execute(
-                select(Intent).where(Intent.name == intent)
-            )
+            result = await session.execute(select(Intent).where(Intent.name == intent))
             intent_obj = result.scalar_one_or_none()
-            
+
             if not intent_obj:
                 return False, f"Graph with intent '{intent}' not found"
-            
+
             # Validate graph schema
             is_valid, error = await validate_graph_schema(submission)
             if not is_valid:
                 return False, error
-            
+
             # Get current graph
             graph_result = await session.execute(
                 select(GraphModel)
@@ -286,20 +201,19 @@ class GraphRegistry:
                 .limit(1)
             )
             current_graph = graph_result.scalar_one_or_none()
-            
+
             # Update existing graph record
             if current_graph:
                 current_graph.version = submission.graph.version
-                current_graph.graph_json = submission.graph.model_dump(mode='json')
+                current_graph.graph_json = submission.graph.model_dump(mode="json")
             else:
                 # Create new graph record if none exists
                 graph = GraphModel(
                     intent_id=intent_obj.id,
                     version=submission.graph.version,
-                    graph_json=submission.graph.model_dump(mode='json'),
+                    graph_json=submission.graph.model_dump(mode="json"),
                 )
                 session.add(graph)
             await session.commit()
-            
-            return True, f"Graph '{intent}' updated successfully"
 
+            return True, f"Graph '{intent}' updated successfully"

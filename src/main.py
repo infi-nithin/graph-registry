@@ -8,7 +8,6 @@ from db.database import init_db, close_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan handler for startup and shutdown events."""
     # Startup: Initialize database and run migrations
     await init_db(run_migrations=True)
     yield
@@ -49,8 +48,10 @@ def create_application() -> FastAPI:
 
     return app
 
+
 app = create_application()
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8002)
