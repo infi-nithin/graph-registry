@@ -15,9 +15,11 @@ from service.graph_validator import (
 )
 from db.models import Intent, Graph as GraphModel
 from db.database import get_session_context
+from aop_logging import log_method
 
 
 class GraphRegistry:
+    @log_method("GraphRegistry")
     async def add_graph(self, submission: GraphSubmission) -> Tuple[bool, str]:
         # Validate intent format
         is_valid, error = validate_intent_format(submission.intent)
@@ -71,6 +73,7 @@ class GraphRegistry:
         except Exception:
             raise
 
+    @log_method("GraphRegistry")
     async def get_graph(self, intent: str) -> Optional[GraphSubmission]:
         async with await get_session_context() as session:
             # Get intent
@@ -112,6 +115,7 @@ class GraphRegistry:
             )
             return GraphSubmission(intent=intent, graph=graph)
 
+    @log_method("GraphRegistry")
     async def list_graphs(self) -> GraphListResponse:
         async with await get_session_context() as session:
             # Get all intents with their latest graphs
@@ -149,6 +153,7 @@ class GraphRegistry:
                     graphs_list.append(GraphSubmission(intent=intent.name, graph=graph))
             return GraphListResponse(graphs=graphs_list, total_count=len(graphs_list))
 
+    @log_method("GraphRegistry")
     async def list_intents(self) -> IntentListResponse:
         async with await get_session_context() as session:
             result = await session.execute(select(Intent.name).where(Intent.is_active))
@@ -158,6 +163,7 @@ class GraphRegistry:
                 intents=intents_list, total_count=len(intents_list)
             )
 
+    @log_method("GraphRegistry")
     async def delete_graph(self, intent: str) -> Tuple[bool, str]:
         async with await get_session_context() as session:
             # Get intent
@@ -177,6 +183,7 @@ class GraphRegistry:
 
             return True, f"Graph with intent '{intent}' deleted successfully"
 
+    @log_method("GraphRegistry")
     async def update_graph(
         self, intent: str, submission: GraphSubmission
     ) -> Tuple[bool, str]:

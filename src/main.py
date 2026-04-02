@@ -4,14 +4,19 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.v1 import endpoints
 from db.database import init_db, close_db
+from aop_logging import AOPLoggingMiddleware, RequestTimingMiddleware
+from aop_logging import get_aop_logger
 
+logger = get_aop_logger().logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize database and run migrations
+    logger.info("Initializing database ...")
     await init_db(run_migrations=True)
     yield
     # Shutdown: Close database connections
+    logger.info("Close database ...")
     await close_db()
 
 
@@ -22,6 +27,8 @@ def create_application() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.add_middleware(AOPLoggingMiddleware)
+    app.add_middleware(RequestTimingMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
@@ -30,7 +37,6 @@ def create_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
     app.include_router(endpoints.router, prefix="/api/v1")
 
     @app.get("/", tags=["info"])

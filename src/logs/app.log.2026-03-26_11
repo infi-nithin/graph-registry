@@ -1,0 +1,36 @@
+2026-03-26 11:30:26,641 | aop_logger | INFO | Initializing database ...
+2026-03-26 11:31:38,525 | aop_logger | INFO | Initializing database ...
+2026-03-26 11:32:52,146 | aop_logger | INFO | Initializing database ...
+2026-03-26 11:33:39,161 | aop_logger | INFO | Initializing database ...
+2026-03-26 11:33:44,187 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_graphs SUCCESS | Duration: 344.79319999809377ms
+2026-03-26 11:33:44,189 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs SUCCESS | Duration: 349.656899983529ms
+2026-03-26 11:45:59,045 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 6.186599988723174ms
+2026-03-26 11:45:59,046 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 7.913400011602789ms
+2026-03-26 11:46:02,479 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 6.131200003437698ms
+2026-03-26 11:46:02,479 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/general_query SUCCESS | Duration: 7.4034999997820705ms
+2026-03-26 11:51:13,271 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 4.724400001578033ms
+2026-03-26 11:51:13,272 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 6.389899994246662ms
+2026-03-26 11:51:16,939 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 5.332200002158061ms
+2026-03-26 11:51:16,939 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/general_query SUCCESS | Duration: 6.766100006643683ms
+2026-03-26 11:54:01,126 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 5.527300003450364ms
+2026-03-26 11:54:01,128 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 8.318200008943677ms
+2026-03-26 11:54:03,991 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 11.560799990547821ms
+2026-03-26 11:54:03,992 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/fetch_pet_details SUCCESS | Duration: 14.092000026721507ms
+2026-03-26 11:59:56,874 | aop_logger | INFO | Close database ...
+2026-03-26 12:00:27,645 | aop_logger | INFO | Initializing database ...
+2026-03-26 12:31:05,203 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 161.76660000928678ms
+2026-03-26 12:31:05,211 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 216.82840000721626ms
+2026-03-26 12:31:11,038 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 85.65380002255552ms
+2026-03-26 12:31:11,041 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/fetch_pet_details SUCCESS | Duration: 95.3628999995999ms
+2026-03-26 12:46:44,727 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 2.381799975410104ms
+2026-03-26 12:46:44,728 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 3.5032000159844756ms
+2026-03-26 12:46:52,949 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 3.0583000043407083ms
+2026-03-26 12:46:52,949 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/fetch_pet_details SUCCESS | Duration: 4.497500020079315ms
+2026-03-26 12:56:30,086 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 2.324899978702888ms
+2026-03-26 12:56:30,086 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 3.2285000197589397ms
+2026-03-26 12:56:33,246 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 4.292500001611188ms
+2026-03-26 12:56:33,246 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/fetch_pet_details SUCCESS | Duration: 5.417999986093491ms
+2026-03-26 12:58:04,222 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.list_intents SUCCESS | Duration: 1.6301999858114868ms
+2026-03-26 12:58:04,223 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/intents SUCCESS | Duration: 2.505300013581291ms
+2026-03-26 12:58:10,425 | aop_logger | INFO | [OperationType.SERVICE_METHOD] GraphRegistry.get_graph SUCCESS | Duration: 3.051599982427433ms
+2026-03-26 12:58:10,426 | aop_logger | INFO | [OperationType.API_ENDPOINT] GET /api/v1/graphs/fetch_pet_details SUCCESS | Duration: 3.888500010361895ms
